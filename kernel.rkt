@@ -3,12 +3,16 @@
 (require racket/match)
 
 
-;; Evaluator.
-
+;; -----------------------------------   Evaluator.
 (define (eval expr env)
   (match expr
     ;; Evaluate the basic data types.      
     [(? boolean?) expr]
     [(? string?)  expr]
     [(? number?)  expr] ))
+
+
+;; -----------------------------------   Enviroment
+
+(provide eval)
     
