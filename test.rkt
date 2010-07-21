@@ -8,5 +8,4 @@
 
 (check-equal? (eval 1 '())       1       "Positive number")
 (check-equal? (eval -123 '()) -123       "Negative number")
-
 (check-equal? (eval "hola" '()) "hola"   "String")
