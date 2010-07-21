@@ -1,4 +1,4 @@
-#lang racket/base
+#lang racket
 
 (require racket/match)
 
@@ -19,22 +19,15 @@
     [(? boolean?) expr]
     [(? string?)  expr]
     [(? number?)  expr]
-
-    ;; Set a value symbol value. 
-    ['(set!, keym value ) expr]
     
     ;; The if expression
-    [`(if ,ec ,et ,ef)    (if (eval ec env)
-                              (eval et env)
-                              (eval ef env))]))
-
+    [`(if ,ec ,et ,ef)  (if ec et ef)]))
 
 
 ;; -----------------------------------   Enviroment
-(define (env.empty) (hash))
-(define (env.initial) (env.empty))
+(define env.init '())
 
+(define lookup )
 
-
-(provide eval env.initial)
+(provide eval)
     

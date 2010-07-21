@@ -16,6 +16,6 @@
 ;; The If statement
 (check-equal?  (eval '(if #t "hola" "adios") (env.initial)) "hola"      "false condition in if statament")
 (check-equal?  (eval '(if #f "hola" "adios") (env.initial)) "adios"     "false condition in if statament")
-(check-equal?  (eval '(if #t (+ 1 1) (- 1 1)) (env.initial)) 2          "Execute form in a if statament true branch")
-(check-equal?  (eval '(if #f (+ 1 1) (- 1 1)) (env.initial)) 0          "Execute form in a if statament false branch")
-(check-equal?  (eval '(if (eq? 1 1) (+ 1 1) (- 1 1)) (env.initial)) 2   "Execute form in condition if statament")
+;; (check-equal?  (eval '(if #t (+ 1 1) (- 1 1)) (env.initial)) 2          "Execute form in a if statament true branch")
+;; (check-equal?  (eval '(if #f (+ 1 1) (- 1 1)) (env.initial)) 0          "Execute form in a if statament false branch")
+;; (check-equal?  (eval '(if (eq? 1 1) (+ 1 1) (- 1 1)) (env.initial)) 2   "Execute form in condition if statament")
