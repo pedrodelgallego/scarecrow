@@ -2,8 +2,6 @@
   
 (require rackunit "kernel.rkt")
 
-
-
 ;; Test Simple data types. 
 (check-equal? (eval #f env.global) #f "Simple false atom ")
 (check-equal? (eval #t env.global) #t "Simple true atom")
@@ -20,6 +18,7 @@
 ;; (check-equal?  (eval '(if #t (+ 1 1) (- 1 1)) env.global) 2          "Execute form in a if statament true branch")
 ;; (check-equal?  (eval '(if #f (+ 1 1) (- 1 1)) env.global) 0          "Execute form in a if statament false branch")
 ;; (check-equal?  (eval '(if (eq? 1 1) (+ 1 1) (- 1 1)) env.global) 2   "Execute form in condition if statament")
+(check-equal? '(evaluate '(if (boolean? (eq? (= (- 2 1) (+ 1 0) )#t)) (- 1 (+ 1 1)) (- 1 1))-1  )) 
+;; Enviroment
 
-;; Enviroment 
-(check-equal? (eval '(set! 1 "hola") env.global) (hash-set (hash) 1 "hola") "Set up a symbol")
+(check-equal? (eval '(begin (set! x "hola") x) env.global)  "hola" "Set up a symbol")
