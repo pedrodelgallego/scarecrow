@@ -2,23 +2,70 @@
   
 (require rackunit "kernel.rkt")
 
+(define (test description test-case result)  
+  (display ".")
+  (check-equal? (evaluate test-case) result description))
+
 ;; Test Simple data types. 
-(check-equal? (eval #f env.global) #f "Simple false atom ")
-(check-equal? (eval #t env.global) #t "Simple true atom")
+(test "the false value" #f #f)
+(test "The true  value " #t #t)
 
-(check-equal? (eval 1 env.global)       1       "Positive number")
-(check-equal? (eval -123 env.global) -123       "Negative number")
+(test "Positive numbers " 1 1)
+(test "Negative numbers " -123 -123)
 
-(check-equal? (eval "hola" env.global) "hola"   "String")
+(test "String " "hola" "hola")
 
 ;; The If statement
-(check-equal?  (eval '(if #t "hola" "adios") env.global) "hola"      "false condition in if statament")
-(check-equal?  (eval '(if #f "hola" "adios") env.global) "adios"     "false condition in if statament")
+(test "a true condition in if statament" '(if #t "hola" "adios") "hola")
+(test "a false condition in if statament" '(if #f "hola" "adios") "adios")
 
-;; (check-equal?  (eval '(if #t (+ 1 1) (- 1 1)) env.global) 2          "Execute form in a if statament true branch")
-;; (check-equal?  (eval '(if #f (+ 1 1) (- 1 1)) env.global) 0          "Execute form in a if statament false branch")
-;; (check-equal?  (eval '(if (eq? 1 1) (+ 1 1) (- 1 1)) env.global) 2   "Execute form in condition if statament")
-(check-equal? '(evaluate '(if (boolean? (eq? (= (- 2 1) (+ 1 0) )#t)) (- 1 (+ 1 1)) (- 1 1))-1  )) 
-;; Enviroment
+(test "Execute form in a if statament true branch"
+      '(if #t (+ 1 1) (- 1 1))
+      2)
 
-(check-equal? (eval '(begin (set! x "hola") x) env.global)  "hola" "Set up a symbol")
+(test "Execute form in a if statament false branch"
+      '(if #f (+ 1 1) (- 1 1))
+      0 )
+
+(test "Execute form in condition if statament"
+      '(if (eq? 1 1) (+ 1 1) (- 1 1))
+      2)   
+
+(test "Check nested forms in a if statement" 
+       '(if (boolean? (eq? (= (- 2 1) (+ 1 0) )#t)) (- 1 (+ 1 1)) (- 1 1)) 
+       -1 )
+
+;; Begin
+(test "Set a variable from a 'begin scope"
+      '(begin (set! x "hola") x)
+      "hola")
+
+(test "Set a variable from a 'lambda scope"
+      '(begin (lambda (y) (set! x "hola")) x)
+        "hola") 
+      
+;; Lambda 
+(test  "Call a Lambda Function"
+       '((lambda (y) y) 1)
+       1 )
+
+(test "Execute a lambda function"      
+      '((lambda (y) (+ 1 y)) 1) 
+      2 )
+
+(test "Lambda do not polute the "
+     '(begin (set! x "outter x") ((lambda(x) x) "inner x") x)
+     "outter x")
+
+(test "Nest begin clause"
+      '(begin (+ 1 1) (begin (+ 1 1) (+ 1 1)) (+ (+ 1 2) 100))
+      103 )
+
+(test "Nested begin clause"
+      '(begin (+ 1 1) (begin (+ 1 1) (+ 1 1))  1)
+      1 )            
+
+(test  "Nest begin clause"
+       '(begin (+ 1 1) (begin (+ 1 1) (+ 1 1)) (+ (+ 1 2) 100)) 
+       103)
+
