@@ -12,30 +12,38 @@
 ;; -----------------------------------   Evaluator.
 (define (eval expr env)
   (match expr
-         ;; Evaluate the basic data types.
+         
+    ;; Evaluate the basic data types.
     [(? boolean?) expr]         
     [(? string?)  expr]
     [(? number?)  expr]
     [(? symbol?)  (env.look-up expr env)]
     [`(set! ,key ,value ) (env.set! key value)]
-
+    
     [`(if ,ec ,et ,ef) (if (eval ec env)
                            (eval et env)
-                           (eval ef env))] 
+                           (eval ef env))]
+
+    [`(lambda ,vars , body)
+       (list 'fake-lambda expr env)]
     
-    [`(begin ,e1 )   (begin (display e1) (display (length e1)) (eprogn e1 env))]
-        
-    [`(lambda ,args ,body) (make-function args  body env)]
-        
-    [`(,f . ,args)     ((eval f env) 
-                         (map (evlis env) args))] ))
+    [(list 'begin expr ...)
+        (last (map (evlis env) expr))]
+    
+    [`(,f . ,args)
+       (apply-proc (eval f env)
+                   (map (evlis env) args)) ]  ))
 
+; applies a procedure to arguments:
+(define (apply-proc f values)
+  (match f
+         
+    [`(fake-lambda (lambda ,vs ,body) ,env)  (eval body (extended-env* env vs values))]
 
-;;; ===================================================================
+    ;;  [(list _ vs body env)  (eval body (extended-env* env vs values))]
+    
+    [_ (f values)]))
 
-(define (make-function variables body env)
-  (lambda (values)
-     (eprogn body (extended-env* env variables values)) ) )
 
 ; extends an environment with several bindings:
 (define (extended-env* env vars values)
@@ -45,14 +53,9 @@
          
      [`(() ())  env] ))
 
-
-(define (eprogn expr env)
-  (display (length expr))
-  (if (not (null? expr))
-      (begin (eval (car expr) env)
-             (eprogn (cdr expr) env) )
-      '()))
-
+; a handy wrapper for Currying eval:
+(define (evlis  env) 
+  (lambda (exp) (eval exp env)))
 
 ;; -----------------------------------   Enviroment
 
@@ -69,11 +72,6 @@
 
 (define (env.look-up expr env )
   (hash-ref env expr))
-
-; a handy wrapper for Currying eval:
-(define (evlis  env) 
-  (lambda (exp) (eval exp env)))
-
 
 (define (clone-env x)
   (make-weak-hash (hash-map x (lambda (x  y) (cons x y)))))
@@ -98,6 +96,13 @@
   (defprimitive name
     (lambda values (or (apply value values) the-false-value))
     arity ) )
+
+(define (last lst)
+  (if (pair? lst)
+      (if (pair? (cdr lst))
+          (last (cdr lst))
+          (car lst))
+      (error "parameter should be a non empty list")))
 
 ;; ----------------------------------- 
 
