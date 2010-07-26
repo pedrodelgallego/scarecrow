@@ -7,82 +7,83 @@
 
 ;; -------------------------------------    Data Types Predicates.
 (define (boolean? x )
-  (or (eq? x the-false-value) (eq? x (not the-false-value)) ))
+  (or (eq? x the-false-value)
+      (eq? x (not the-false-value)) ))
 
 ;; -----------------------------------   Evaluator.
 (define (eval expr env)
-  (match expr
-         
+  (match expr         
     ;; Evaluate the basic data types.
     [(? boolean?) expr]         
     [(? string?)  expr]
     [(? number?)  expr]
     [(? symbol?)  (env.look-up expr env)]
-    [`(set! ,key ,value ) (env.set! key value)]
+    
+    [`(set! ,key ,value ) (env.set!  key value)]
     
     [`(if ,ec ,et ,ef) (if (eval ec env)
                            (eval et env)
                            (eval ef env))]
 
-    [`(lambda ,vars , body)
-       (list 'fake-lambda expr env)]
+    [`(let ,bindings ,body )
+     (eval-let bindings body env)]
+
+    [`(lambda ,bindings ,body)
+       (list 'closure expr env)]
     
     [(list 'begin expr ...)
-        (last (map (evlis env) expr))]
+       (last (map (evlis env) expr))]
     
     [`(,f . ,args)
        (apply-proc (eval f env)
-                   (map (evlis env) args)) ]  ))
+                   (map (evlis env) args)) ]
+    [_ error "Unknown expression type -- EVAL" expr]))
 
 ; applies a procedure to arguments:
-(define (apply-proc f values)
+(define (apply-proc f values)   
   (match f
-         
-    [`(fake-lambda (lambda ,vs ,body) ,env)  (eval body (extended-env* env vs values))]
-
-    ;;  [(list _ vs body env)  (eval body (extended-env* env vs values))]
+    [`(closure (lambda ,vs ,body) ,env)
+       (eval body (extended-env* env vs values))]
     
     [_ (f values)]))
 
-
-; extends an environment with several bindings:
-(define (extended-env* env vars values)
-  (match `(,vars ,values)
-     [`((,v . ,vars) (,val . ,values))
-          (extended-env*  (env.set (clone-env env) v val)  vars values)]
-         
-     [`(() ())  env] ))
+; eval for let:
+(define (eval-let bindings body env)
+  ;; improve this
+  (eval body (extended-env* env
+                            (map car bindings)
+                            (map (evlis env) (map cadr bindings) ))))
 
 ; a handy wrapper for Currying eval:
 (define (evlis  env) 
   (lambda (exp) (eval exp env)))
 
-;; -----------------------------------   Enviroment
-
-(define env.empty (make-weak-hash))
+(define env.empty (make-immutable-hash '()))
 (define env.global env.empty)
 
-(define (env.set! key value)
-  (hash-set! env.global key value)
-  env.global)
-
-(define (env.set env  key value)
-  (hash-set! env key value)
-  env)
+(define (env.set! env key value)  (definitial key value))
+(define (env.set  env key value)  (hash-set env key value))
 
 (define (env.look-up expr env )
   (hash-ref env expr))
 
-(define (clone-env x)
-  (make-weak-hash (hash-map x (lambda (x  y) (cons x y)))))
+(define (extended-env* env vars values)
+  (match `(,vars ,values)
+     [`((,v . ,vars) (,val . ,values))
+          (extended-env*  (env.set env v val)  vars values)]
+         
+     [`(() ())  env] ))
+
 
 ;; -----------------------------------   Primitives
 (define-syntax definitial 
   (syntax-rules ()    
     [(definitial name)
-      (hash-set! env.global name null) ]    
+     (set! env.global (env.set env.global name null)) ]
+    
     [(definitial name value)
-     (hash-set! env.global name value) ] ) )
+     (set! env.global (env.set env.global name value)) ]))    
+     
 
 (define-syntax-rule (defprimitive name value arity)
   (definitial name 
@@ -119,17 +120,19 @@
 (defpredicate 'pair? pair? 1)
 (defpredicate 'boolean? boolean? 1)
 (defpredicate 'symbol? symbol? 1)
-(defprimitive 'eq? eq? 2)           ; cf. exercice \ref{exer-predicate}
-(defpredicate 'eq? eq? 2)           ; cf. exercice \ref{exer-predicate}
+(defprimitive 'eq? eq? 2)
+(defpredicate 'eq? eq? 2)
 (defprimitive '+ + 2)
 (defprimitive '- - 2)
 (defpredicate '= = 2)
 (defpredicate '> > 2)
-(defpredicate '< < 2)               ; cf. exercice \ref{exer-predicate}\endlisp
+(defpredicate '< < 2)    
 (defprimitive '* * 2)
 (defpredicate '<= <= 2)
 (defpredicate '>= >= 2)
 (defprimitive 'remainder remainder 2)
 (defprimitive 'display display 1)
 
+;; (module-path-index-resolve (car (identifier-binding  #'define-syntax-rule)))
 (provide eval env.global evaluate)
+

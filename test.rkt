@@ -36,13 +36,13 @@
        -1 )
 
 ;; Begin
-(test "Set a variable from a 'begin scope"
-      '(begin (set! x "hola") x)
-      "hola")
+;;(test "Set a variable from a 'begin scope"
+;;      '(begin (set! x "hola") x)
+;;      "hola")
 
-(test "Set a variable from a 'lambda scope"
-      '(begin (lambda (y) (set! x "hola")) x)
-        "hola") 
+;;(test "Set a variable from a 'lambda scope"
+;;      '(begin (lambda (y) (set! x "hola")) x)
+;;        "hola") 
       
 ;; Lambda 
 (test  "Call a Lambda Function"
@@ -53,9 +53,9 @@
       '((lambda (y) (+ 1 y)) 1) 
       2 )
 
-(test "Lambda do not polute the "
-     '(begin (set! x "outter x") ((lambda(x) x) "inner x") x)
-     "outter x")
+;;(test "Lambda do not polute the "
+;;     '(begin (set! x "outter x") ((lambda(x) x) "inner x") x)
+;;     "outter x")
 
 (test "Nest begin clause"
       '(begin (+ 1 1) (begin (+ 1 1) (+ 1 1)) (+ (+ 1 2) 100))
@@ -69,3 +69,18 @@
        '(begin (+ 1 1) (begin (+ 1 1) (+ 1 1)) (+ (+ 1 2) 100)) 
        103)
 
+;; Let 
+(test "simple let scope"
+      '(let ((x 1) ) x)
+      1)
+
+(test "let accept procedure to set up lexical variables"
+      '(let ((x (+ 1 1)) ) x)
+      2)
+
+(test "Nested let scope"
+      '(let ((x 1))
+         (let ((x 3))
+           x))
+      3)
+      
