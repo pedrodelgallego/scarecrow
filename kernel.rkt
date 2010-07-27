@@ -31,7 +31,7 @@
                                   (map (evlis env) (map cadr bindings))))]
 
     [`(define (,name . ,bindings) ,function )     
-        (begin (definitial name (list 'closure expr))
+        (begin (env.set! name (list 'closure expr))
                (list 'closure expr))]
     
     [`(define ,name ,value)
@@ -54,6 +54,9 @@
   (match f
     [`(closure (lambda ,vs ,body) ,env)
      (eval body (extended-env* env vs values))]
+    
+    [`(closure (define (,name . ,vs) ,body) )
+     (eval body (extended-env* env.global vs values))]
     
     [_ (f values)]))
 
