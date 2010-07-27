@@ -36,14 +36,15 @@
        -1 )
 
 ;; Begin
-;;(test "Set a variable from a 'begin scope"
-;;      '(begin (set! x "hola") x)
-;;      "hola")
+(test "Set a variable from a 'begin scope"
+      '(begin (define x 1) (set! x "hola") x)
+      "hola")
 
-;;(test "Set a variable from a 'lambda scope"
-;;      '(begin (lambda (y) (set! x "hola")) x)
-;;        "hola") 
+(test "Set a variable from a 'lambda scope"
+      '(begin (lambda (y) (set! x "hola")) x)
+      "hola") 
       
+
 ;; Lambda 
 (test  "Call a Lambda Function."
        '((lambda (y) y) 1)
@@ -53,9 +54,9 @@
       '((lambda (y) (+ 1 y)) 1) 
       2 )
 
-;;(test "Lambda do not polute the "
-;;     '(begin (set! x "outter x") ((lambda(x) x) "inner x") x)
-;;     "outter x")
+(test "Lambda do not polute the "
+     '(begin (set! x "outter x") ((lambda(x) x) "inner x") x)
+     "outter x")
 
 (test "Nest begin clause."
       '(begin (+ 1 1) (begin (+ 1 1) (+ 1 1)) (+ (+ 1 2) 100))
@@ -97,10 +98,10 @@
 
 ;; Other classic functions 
 (test "A the factorial function"
-      '(let ((fact (lambda (n)
-                     (if (= 0 n)
-                         1
-                         (* n (fact (- n 1)))))))
-         (fact 3))
+      '(begin (define (fact n)
+                (if (= 0 n)
+                    1
+                    (* n (fact (- n 1)))))
+              (fact 3))
       6)
       

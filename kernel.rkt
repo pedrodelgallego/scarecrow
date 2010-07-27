@@ -13,7 +13,6 @@
 ;; -----------------------------------   Evaluator.
 (define (eval expr env)
   (match expr         
-    ;; Evaluate the basic data types.
     [(? boolean?) expr]
     [(? string?)  expr]
     [(? number?)  expr]
@@ -26,18 +25,23 @@
                            (eval ef env))]
 
     [`(let ,bindings ,body )
-        (eval-let bindings body env)]
+        (eval body (extended-env* env
+                                  (map car bindings)
+                                  (map (evlis env) (map cadr bindings))))]
 
     [`(define (,name . ,bindings) ,function )     
         (begin (definitial name (list 'closure expr))
-               (list 'closure expr))] 
+               (list 'closure expr))]
     
+    [`(define ,name ,value)
+      (env.set! name value)]
+
     [`(lambda ,bindings ,body) 
-        (list 'closure expr env)]
-    
-    [(list 'begin expr ...)
-        (last (map (evlis env) expr))]
-    
+         (list 'closure expr env)]
+
+    [`(begin . ,expr)
+          (last (map (evlis env) expr)) ]
+       
     [`(,f . ,args)
         (apply-proc (eval f env)
                    (map (evlis env) args)) ]
@@ -50,56 +54,37 @@
     [`(closure (lambda ,vs ,body) ,env)
      (eval body (extended-env* env vs values))]
     
-    [`(closure (define (,name . ,vs) ,body))
-     (begin (display name)   (newline)
-            (display vs)   (newline)
-            (display values) (newline)
-            (display body)   (newline)
-            (eval body (extended-env* env.global vs values)))]
-    
     [_ (f values)]))
 
-; eval for let:
-(define (eval-let bindings body env)
-  ;; improve this
-  (eval body (extended-env* env
-                            (map car bindings)
-                            (map (evlis env) (map cadr bindings) ))))
-
-(define (eval-define name lambda env)
-  (set! env.global (env.set env.global name lambda))
-  (hash-ref env name))
-  
-; a handy wrapper for Currying eval:
 (define (evlis  env) 
   (lambda (exp) (eval exp env)))
 
-(define env.empty (make-immutable-hash '()))
-(define env.global env.empty)
+;; -----------------------------------   Environment
+(define-struct cell ([value #:mutable]))
+(define env.global (make-immutable-hash '()))
 
-(define (env.set! env key value)  (definitial key value))
-(define (env.set  env key value)  (hash-set env key value))
+(define (env.set   env key value)  (hash-set env key value))
+(define (env.set!      key value)
+  (set-cell-value! (hash-ref env.global key) value))
 
 (define (env.look-up expr env )
-  (hash-ref env expr))
+  (cell-value (hash-ref env expr)))
 
 (define (extended-env* env vars values)
   (match `(,vars ,values)
      [`((,v . ,vars) (,val . ,values))
-          (extended-env*  (env.set env v val)  vars values)]
+          (extended-env*  (env.set env v (make-cell val))  vars values)]
          
      [`(() ())  env] ))
-
 
 ;; -----------------------------------   Primitives
 (define-syntax definitial 
   (syntax-rules ()    
     [(definitial name)
-     (set! env.global (env.set env.global name null)) ]
+     (set! env.global (env.set env.global name (make-cell null))) ]
     
     [(definitial name value)
-     (set! env.global (env.set env.global name value)) ]))    
-     
+     (set! env.global (env.set env.global name (make-cell value))) ]))    
 
 (define-syntax-rule (defprimitive name value arity)
   (definitial name 
@@ -122,9 +107,20 @@
       (error "parameter should be a non empty list")))
 
 ;; ----------------------------------- 
+(define (evaluate program)
+  (if (list? program)
+      (map define->bindings program)
+      '())
+  (eval program env.global))    
 
-(define (evaluate program)  
-  (eval program env.global))
+(define (puts text) (display text)(newline))
+
+(define (define->bindings define)  
+  (match define
+    [`(define (,name . ,bindings ) ,body)   (definitial name)]
+    [`(define ,name ,value)  (definitial name)]
+    [else    '()]))
+
 
 (definitial #t #t)
 (definitial #f the-false-value)
@@ -152,4 +148,3 @@
 
 ;; (module-path-index-resolve (car (identifier-binding  #'define-syntax-rule)))
 (provide eval env.global evaluate)
-
