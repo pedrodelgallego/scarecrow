@@ -14,7 +14,7 @@
 (define (eval expr env)
   (match expr         
     ;; Evaluate the basic data types.
-    [(? boolean?) expr]         
+    [(? boolean?) expr]
     [(? string?)  expr]
     [(? number?)  expr]
     [(? symbol?)  (env.look-up expr env)]
@@ -26,24 +26,35 @@
                            (eval ef env))]
 
     [`(let ,bindings ,body )
-     (eval-let bindings body env)]
+        (eval-let bindings body env)]
 
-    [`(lambda ,bindings ,body)
-       (list 'closure expr env)]
+    [`(define (,name . ,bindings) ,function )     
+        (list 'closure expr))] 
+    
+    [`(lambda ,bindings ,body) 
+        (list 'closure expr env)]
     
     [(list 'begin expr ...)
-       (last (map (evlis env) expr))]
+        (last (map (evlis env) expr))]
     
     [`(,f . ,args)
-       (apply-proc (eval f env)
+        (apply-proc (eval f env)
                    (map (evlis env) args)) ]
-    [_ error "Unknown expression type -- EVAL" expr]))
+    
+    [_ error "Unknown expression type -- EVAL" expr] ))
 
 ; applies a procedure to arguments:
 (define (apply-proc f values)   
   (match f
     [`(closure (lambda ,vs ,body) ,env)
-       (eval body (extended-env* env vs values))]
+     (eval body (extended-env* env vs values))]
+    
+    [`(closure (define (,name . ,vs) ,body))
+     (begin (display name)   (newline)
+            (display vs)   (newline)
+            (display values) (newline)
+            (display body)   (newline)
+            (eval body (extended-env* env.global vs values)))]
     
     [_ (f values)]))
 
@@ -54,6 +65,10 @@
                             (map car bindings)
                             (map (evlis env) (map cadr bindings) ))))
 
+(define (eval-define name lambda env)
+  (set! env.global (env.set env.global name lambda))
+  (hash-ref env name))
+  
 ; a handy wrapper for Currying eval:
 (define (evlis  env) 
   (lambda (exp) (eval exp env)))
@@ -120,6 +135,7 @@
 (defpredicate 'pair? pair? 1)
 (defpredicate 'boolean? boolean? 1)
 (defpredicate 'symbol? symbol? 1)
+(defpredicate 'procedure? procedure? 1)
 (defprimitive 'eq? eq? 2)
 (defpredicate 'eq? eq? 2)
 (defprimitive '+ + 2)
