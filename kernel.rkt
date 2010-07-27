@@ -29,7 +29,8 @@
         (eval-let bindings body env)]
 
     [`(define (,name . ,bindings) ,function )     
-        (list 'closure expr)] 
+        (begin (definitial name (list 'closure expr))
+               (list 'closure expr))] 
     
     [`(lambda ,bindings ,body) 
         (list 'closure expr env)]
