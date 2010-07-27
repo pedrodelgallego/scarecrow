@@ -12,7 +12,8 @@
 
 ;; -----------------------------------   Evaluator.
 (define (eval expr env)
-  (match expr         
+  (match expr
+    [`(__environment__) env]
     [(? boolean?) expr]
     [(? string?)  expr]
     [(? number?)  expr]
