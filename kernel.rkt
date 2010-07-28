@@ -31,14 +31,13 @@
                                   (map (evlis env) (map cadr bindings))))]
 
     [`(define (,name . ,bindings) ,function )     
-        (begin (env.set! name (list 'closure expr))
-               (list 'closure expr))]
+        (env.set! name (list 'closure expr))]
     
     [`(define ,name ,value)
-      (env.set! name value)]
+        (env.set! name value)]
 
     [`(lambda ,bindings ,body) 
-         (list 'closure expr env)]
+        (list 'closure expr env)]
 
     [`(begin . ,expr)
           (last (map (evlis env) expr)) ]
@@ -110,21 +109,21 @@
           (car lst))
       (error "parameter should be a non empty list")))
 
-;; ----------------------------------- 
+;; -----------------------------------
+(define (eval-program  program)
+  (evaluate (cons 'begin program)))
+  
 (define (evaluate program)
   (if (list? program)
       (map define->bindings program)
       '())
-  (eval program env.global))    
-
-(define (puts text) (display text)(newline))
+  (eval program env.global))
 
 (define (define->bindings define)  
   (match define
     [`(define (,name . ,bindings ) ,body)   (definitial name)]
     [`(define ,name ,value)  (definitial name)]
     [else    '()]))
-
 
 (definitial #t #t)
 (definitial #f the-false-value)
