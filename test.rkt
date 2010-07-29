@@ -79,6 +79,13 @@
       '(let ((x (+ 1 1)) ) x)
       2)
 
+
+;;(test "let accept procedure to set up lexical variables."
+;;      '(let ((x (+ 1 1)) )
+;;         (begin (set! x 3) 
+;;               x))
+;;     3)
+
 (test "let create assign lambda to a lexical scoped variable."
       '(let ((increment (lambda (x) (+ 1 x))))
                (increment 1))
@@ -105,3 +112,8 @@
               (fact 3))
       6)
       
+;; Extensions 
+
+(test "inspect the environment"
+      '__environment__
+      env.global)

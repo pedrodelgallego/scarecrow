@@ -2,25 +2,18 @@
 
 (require racket/match)
 
-;; -------------------------------------    Define booleans
-(define the-false-value #f)
-
-;; -------------------------------------    Data Types Predicates.
-(define (boolean? x )
-  (or (eq? x the-false-value)
-      (eq? x (not the-false-value)) ))
-
 ;; -----------------------------------   Evaluator.
 (define (eval expr env)
   (match expr
-    [`(__environment__) env]
+    [`__environment__ env]
+         
     [(? boolean?) expr]
     [(? string?)  expr]
     [(? number?)  expr]
     [(? symbol?)  (env.look-up expr env)]
     
     [`(set! ,key ,value ) (env.set!  key value)]
-    
+
     [`(if ,ec ,et ,ef) (if (eval ec env)
                            (eval et env)
                            (eval ef env))]
@@ -63,20 +56,21 @@
   (lambda (exp) (eval exp env)))
 
 ;; -----------------------------------   Environment
-(define-struct cell ([value #:mutable]))
+(define-struct box ([value #:mutable]))
+
 (define env.global (make-immutable-hash '()))
 
 (define (env.set   env key value)  (hash-set env key value))
 (define (env.set!      key value)
-  (set-cell-value! (hash-ref env.global key) value))
+  (set-box-value! (hash-ref env.global key) value))
 
 (define (env.look-up expr env )
-  (cell-value (hash-ref env expr)))
+  (box-value (hash-ref env expr)))
 
 (define (extended-env* env vars values)
   (match `(,vars ,values)
      [`((,v . ,vars) (,val . ,values))
-          (extended-env*  (env.set env v (make-cell val))  vars values)]
+          (extended-env*  (env.set env v (make-box val))  vars values)]
          
      [`(() ())  env] ))
 
@@ -84,10 +78,10 @@
 (define-syntax definitial 
   (syntax-rules ()    
     [(definitial name)
-     (set! env.global (env.set env.global name (make-cell null))) ]
+     (set! env.global (env.set env.global name (make-box null))) ]
     
     [(definitial name value)
-     (set! env.global (env.set env.global name (make-cell value))) ]))    
+     (set! env.global (env.set env.global name (make-box value))) ]))    
 
 (define-syntax-rule (defprimitive name value arity)
   (definitial name 
@@ -99,7 +93,7 @@
 
 (define-syntax-rule (defpredicate  name value arity)
   (defprimitive name
-    (lambda values (or (apply value values) the-false-value))
+    (lambda values (or (apply value values) #f))
     arity ) )
 
 (define (last lst)
@@ -126,7 +120,7 @@
     [else    '()]))
 
 (definitial #t #t)
-(definitial #f the-false-value)
+(definitial #f #t)
 (definitial 'nil '())
 
 (defprimitive 'cons cons 2)
@@ -150,4 +144,4 @@
 (defprimitive 'display display 1)
 
 ;; (module-path-index-resolve (car (identifier-binding  #'define-syntax-rule)))
-(provide eval env.global evaluate)
+(provide evaluate env.global eval-program)
