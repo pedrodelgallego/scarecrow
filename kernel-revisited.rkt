@@ -4,59 +4,73 @@
 
 ;; -----------------------------------   Evaluator.
 (define (eval expr env)
+  ;; (display "evaluating ") (display expr) (newline)
   (match expr
     [`__environment__ env]
          
-    [(? boolean?)                              ((Evaluator 'literal) expr)]
-    [(? string?)                               ((Evaluator 'literal) expr)]
-    [(? number?)                               ((Evaluator 'literal) expr)]
-    [(? symbol?)                               ((Evaluator 'symbol)  expr env)]
+    [(? boolean?)                              (evaluator 'literal expr)]
+    [(? string?)                               (evaluator 'literal expr)]
+    [(? number?)                               (evaluator 'literal expr)]    
+    [(? symbol?)                               (evaluator 'symbol  env expr)]
+                                                
+    [`(set! ,key ,value)                       (evaluator 'set!    key value)]
     
-    [`(set! ,key ,value)                       ((Evaluator 'set!)    key value)]
-    [`(if ,ec ,et ,ef)                         ((Evaluator 'if)      ec et ef env )]     
-    [`(let ,bindings ,body)                    ((Evaluator 'let)     bindings body env)]
-    [`(define (,name . ,bindings) ,function)   ((Evaluator 'define)  name expr )]    
-    [`(define ,name ,value)                    ((Evaluator 'set!)    name value)]
-    [`(lambda ,bindings ,body)                 ((Evaluator 'lambda)  expr env)]
-    [`(begin . ,expr)                          ((Evaluator 'begin)   expr env)]
+    [`(define (,name . ,bindings) ,function)   (evaluator 'define  name expr )]
+    [`(define ,name ,value)                    (evaluator 'set!    name value)]
     
-    [`(,f . ,args)                             ((Evaluator 'apply-proc) (eval f env)
-                                                                        (map ((Evaluator 'evlis) env) args)) ]    
+    [`(if ,ec ,et ,ef)                         (evaluator 'if      env ec et ef)]
+    [`(let ,bindings ,body)                    (evaluator 'let     env bindings body)]
+    [`(lambda ,bindings ,body)                 (evaluator 'lambda  env expr )]
+    [`(begin . ,expr)                          (evaluator 'begin   env expr)]
+    
+    [`(,f . ,args)                             (evaluator 'apply-proc  env
+                                                                       (eval f env)
+                                                                       (map ((evaluator 'evlis) env) args)) ]
     [_ error "Unknown expression type -- EVAL" expr] ))
 
 
-;; -----------------------------------   Evaluation Helpers
+;; -----------------------------------   Evaluation
 
-(define Evaluator
-  (lambda (method)
-    (case method
-      [(symbol)  (lambda (expr env)     ((Env 'look-up) expr env))]
-      [(set!)    (lambda (key value)    ((Env 'set!)    key value))]      
-      [(define)  (lambda (name expr )   ((Env 'set!)    name (list 'closure expr)))]
-      
-      [(lambda)  (lambda (expr env)     (list 'closure expr env))]
-      [(begin)   (lambda (expr env)     (last (map ((Evaluator 'evlis) env) expr)))]
-      [(literal) (lambda (expr)          expr)]     
-      [(if)      (lambda (ec et ef env) (if (eval ec env)
-                                            (eval et env)
-                                            (eval ef env)))]
-
-      [(let)     (lambda (bindings body env)  (eval body ((Env 'extended-env*) env
+(define (Evaluator)
+  (define (evlis env) (lambda (exp) (eval exp env)))
+  
+  (define (*literal* expr)          expr)
+  (define (*symbol*  env expr)      ((Env 'look-up) expr env) )
+  (define (*set!*    key value)     ((Env 'set!)    key value))
+  (define (*define*  name expr)     ((Env 'set!)    name (list 'closure expr)))
+    
+  (define (*if*      env ec et ef)  (if (eval ec env) (eval et env) (eval ef env)))
+  (define (*lambda*  env expr)      (list 'closure expr env))
+  (define (*begin*   env expr)      (last (map ((evaluator 'evlis) env) expr)))
+  (define (*let* env bindings body) (eval body ((Env 'extended-env*) env
                                                               (map car bindings)
-                                                              (map ((Evaluator 'evlis) env) (map cadr bindings)))))]
-                  
-      [(evlis)   (lambda (env)   (lambda (exp) (eval exp env)))
-] 
-      [(apply-proc) (lambda (f values)   
-                      (match f
-                        [`(closure (lambda ,vs ,body) ,env)
-                         (eval body ((Env 'extended-env*) env vs values))]
-                      
-                        [`(closure (define (,name . ,vs) ,body) )
-                         (eval body ((Env 'extended-env*) env.global vs values))]
-                        
-                        [_ (f values)] ))] )))      
+                                                              (map ((evaluator 'evlis) env) (map cadr bindings)))))
+  
+  (define (apply-proc env f values)
+    (match f
+       [`(closure (lambda ,vs ,body) ,env)
+        (eval body ((Env 'extended-env*) env vs values))]
+           
+       [`(closure (define (,name . ,vs) ,body) )
+        (eval body ((Env 'extended-env*) env.global vs values))]
+       
+       [_ (f values)] ))
+  
+  (lambda (method . args)
+    (case method
+      [(literal) (apply *literal*  args)]      
+      [(symbol)  (apply *symbol*   args)]
+      [(set!)    (apply *set!*     args)]
+      [(define)  (apply *define*   args)]
+      [(if)      (apply *if*       args)]
+      [(lambda)  (apply *lambda*   args)]
+      [(begin)   (apply *begin*    args)]
+      [(let)     (apply *let*      args)]
+      
+      [(evlis)   evlis] 
+      [(apply-proc) (apply apply-proc args)   ] )))
 
+(define evaluator (Evaluator))
         
 ;; -----------------------------------   Environment
 (define-struct box ([value #:mutable]))
@@ -115,11 +129,11 @@
       '())
   (eval program env.global))
 
-(define (define->bindings define)  
-  (match define
+(define (define->bindings definitions)
+  (match definitions
     [`(define (,name . ,bindings ) ,body)   (definitial name)]
-    [`(define ,name ,value)  (definitial name)]
-    [else    '()]))
+    [`(define ,name ,value)                 (definitial name)]
+    [_    '()]))
 
 (definitial #t #t)
 (definitial #f #t)

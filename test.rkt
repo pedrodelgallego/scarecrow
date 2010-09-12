@@ -1,10 +1,10 @@
 #lang racket/base
   
-(require rackunit "kernel.rkt")
+(require rackunit "kernel-revisited.rkt")
 
 (define (test description test-case result)  
-  (display ".")
-  (check-equal? (evaluate test-case) result description))
+  (check-equal? (evaluate test-case) result description)
+  (display "."))
 
 ;; Test Simple data types. 
 (test "the false value" #f #f)
@@ -14,6 +14,9 @@
 (test "Negative numbers." -123 -123)
 
 (test "String." "hola" "hola")
+
+(test "Simple porcedure call" '(= 1 1) #t)
+(test "Another Simple Porcedure Call" '(= 1 2) #f)
 
 ;; The If statement
 (test "a true condition in if statament." '(if #t "hola" "adios") "hola")
@@ -36,6 +39,10 @@
        -1 )
 
 ;; Begin
+(test "Return the last s-expr evaluation in a begin"
+      '(begin (+ 1 1) (+ 2 2))
+      4)
+
 (test "Set a variable from a 'begin scope"
       '(begin (define x 1) (set! x "hola") x)
       "hola")
@@ -103,6 +110,8 @@
            x))
       3)
 
+
+
 ;; Other classic functions 
 (test "A the factorial function"
       '(begin (define (fact n)
@@ -111,9 +120,14 @@
                     (* n (fact (- n 1)))))
               (fact 3))
       6)
+
+(test "defining a simple function"
+      '(begin (define x 1) x) 
+      1)
       
 ;; Extensions 
 
 (test "inspect the environment"
       '__environment__
       env.global)
+ 
